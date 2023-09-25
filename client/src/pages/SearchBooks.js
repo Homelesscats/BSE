@@ -1,22 +1,28 @@
 import React, { useState, useEffect } from "react";
 import { Container, Col, Form, Button, Card, Row } from "react-bootstrap";
 
-//import Auth from '../utils/auth';
+import Auth from "../utils/auth";
+
+import { searchGoogleBooks } from "../utils/API";
 import { SAVE_BOOK } from "../utils/mutations";
 import { saveBookIds, getSavedBookIds } from "../utils/localStorage";
 import { useMutation } from "@apollo/client";
-import Auth from "../utils/auth";
 
 const SearchBooks = () => {
   // create state for holding returned google api data
+
   const [searchedBooks, setSearchedBooks] = useState([]);
   // create state for holding our search field data
+
   const [searchInput, setSearchInput] = useState("");
 
   // create state to hold saved bookId values
+
   const [savedBookIds, setSavedBookIds] = useState(getSavedBookIds());
+
   //TODO: Use the Apollo useMutation() Hook to execute the SAVE_BOOK mutation in the handleSaveBook() function instead of the saveBook() function imported from the API file.
-  const [saveBook, { error }] = useMutation(SAVE_BOOK);
+
+  const [saveBook, { Error }] = useMutation(SAVE_BOOK);
 
   // set up useEffect hook to save `savedBookIds` list to localStorage on component unmount
 

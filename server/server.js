@@ -1,10 +1,11 @@
 const express = require("express");
 //TODO: Implement the Apollo Server and apply it to the Express server as middleware.
 const { ApolloServer } = require("apollo-server-express");
+const { authMiddleware } = require("./utils/auth");
 
 const path = require("path");
 const db = require("./config/connection");
-const { authMiddleware } = require("./utils/auth");
+
 const { typeDefs, resolvers } = require("./schemas");
 
 const app = express();
@@ -29,9 +30,10 @@ app.get("/", (req, res) => {
 });
 
 // Start the Apollo Server and the Express server.
-const startApolloServer = async () => {
+const startApolloServer = async (typeDefs, resolvers) => {
   await server.start(); // Start the Apollo Server.
   server.applyMiddleware({ app });
+
   db.once("open", () => {
     // Once the database connection is open:
     app.listen(PORT, () => {
@@ -44,5 +46,5 @@ const startApolloServer = async () => {
   });
 };
 
-startApolloServer().catch((err) => console.log(err));
+startApolloServer(typeDefs, resolvers); // Start the Apollo Server and the Express server.
 // Start the Apollo Server and Express server.
