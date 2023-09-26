@@ -1,10 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Form, Button, Alert } from "react-bootstrap";
 
-import { useMutation } from "@apollo/client";
-import { ADD_USER } from "../utils/mutations";
-// import Auth from '../utils/auth'
-//delete API route
+import { CREATE_USER } from "../utils/mutations";
 import Auth from "../utils/auth";
 
 const SignupForm = () => {
@@ -19,27 +16,10 @@ const SignupForm = () => {
   // set state for alert
   const [showAlert, setShowAlert] = useState(false);
 
-  // Define a mutation hook named 'addUser' and destructure its 'error' property.
-  const [addUser, { error }] = useMutation(ADD_USER);
+  const [createUser, { error }] = useMutation(CREATE_USER);
 
-  // This useEffect hook runs whenever 'error' changes.
-  useEffect(() => {
-    // Check if 'error' exists (i.e., there was an error during the mutation).
-    if (error) {
-      // If there's an error, set 'showAlert' to true to display an alert.
-      setShowAlert(true);
-    } else {
-      // If there's no error, hide the alert by setting 'showAlert' to false.
-      setShowAlert(false);
-    }
-  }, [error]);
-
-  // Define a function to handle input changes in the form.
   const handleInputChange = (event) => {
-    // Extract the 'name' and 'value' properties from the input element.
     const { name, value } = event.target;
-
-    // Update the 'userFormData' state by spreading its current values and updating the 'name' property.
     setUserFormData({ ...userFormData, [name]: value });
   };
 
@@ -53,18 +33,18 @@ const SignupForm = () => {
       event.stopPropagation();
     }
 
-    // Attempt to execute the 'addUser' mutation with the provided user data.
     try {
-      // Use the 'addUser' mutation function, passing in the user form data as variables.
-      const { data } = await addUser({
-        variables: { ...userFormData },
+      const { username, email, password } = userFormData;
+      const { data } = await createUser({
+        variables: { username, email, password },
       });
 
-      // Log the 'data' received from the mutation (for debugging purposes).
-      console.log(data);
-      Auth.login(data.addUser.token);
+      const token = data.createUser.token;
+
+      Auth.login(token);
     } catch (err) {
       console.error(err);
+      setShowAlert(true);
     }
 
     setUserFormData({
