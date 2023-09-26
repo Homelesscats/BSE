@@ -1,92 +1,133 @@
-import { Container, Card, Button, Row, Col } from "react-bootstrap";
-
+import React, { useState } from "react";
+import { Form, Button, Alert } from "react-bootstrap";
 import Auth from "../utils/auth";
-import { removeBookId } from "../utils/localStorage";
+import { useMutation } from "@apollo/client";
+import { CREATE_USER } from "../utils/mutations";
 
-import { useQuery, useMutation } from "@apollo/client";
-import { QUERY_ME } from "../utils/queries";
-import { DELETE_BOOK } from "../utils/mutations";
+const SignupForm = () => {
+  // set initial form state
+  const [userFormData, setUserFormData] = useState({
+    username: "",
+    email: "",
+    password: "",
+  });
+  // set state for form validation
+  const [validated] = useState(false);
+  // set state for alert
+  const [showAlert, setShowAlert] = useState(false);
+  // mutation for creating user
+  const [createUser, { error }] = useMutation(CREATE_USER);
 
-const SavedBooks = () => {
-  // check if user is logged in
-  if (!Auth.loggedIn()) {
-    window.location.assign("/");
-  }
+  const handleInputChange = (event) => {
+    const { name, value } = event.target;
+    setUserFormData({ ...userFormData, [name]: value });
+  };
 
-  const { loading, data } = useQuery(QUERY_ME);
-  const [removeBook, { error }] = useMutation(DELETE_BOOK);
+  const handleFormSubmit = async (event) => {
+    event.preventDefault();
 
-  // returns loading div if data is still loading
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  const userData = data?.me || {};
-
-  const handleDeleteBook = async (bookId) => {
-    const token = Auth.loggedIn() ? Auth.getToken() : null;
-
-    if (!token) {
-      return false;
+    // check if form has everything (as per react-bootstrap docs)
+    const form = event.currentTarget;
+    if (form.checkValidity() === false) {
+      event.preventDefault();
+      event.stopPropagation();
     }
 
     try {
-      const { data } = await removeBook({
-        variables: { bookId },
+      const { username, email, password } = userFormData;
+
+      const { data } = await createUser({
+        variables: { username, email, password },
       });
 
-      removeBookId(bookId);
+      const token = data.createUser.token;
+      Auth.login(token);
     } catch (err) {
       console.error(err);
+      setShowAlert(true);
     }
+
+    setUserFormData({
+      username: "",
+      email: "",
+      password: "",
+    });
   };
 
   return (
     <>
-      <div fluid className="text-light bg-dark p-5">
-        <Container>
-          <h1>Viewing saved books!</h1>
-        </Container>
-      </div>
-      <Container>
-        <h2 className="pt-5">
-          {userData.savedBooks.length
-            ? `Viewing ${userData.savedBooks.length} saved ${
-                userData.savedBooks.length === 1 ? "book" : "books"
-              }:`
-            : "You have no saved books!"}
-        </h2>
-        <Row>
-          {userData.savedBooks.map((book) => {
-            return (
-              <Col md="4">
-                <Card key={book.bookId} border="dark">
-                  {book.image ? (
-                    <Card.Img
-                      src={book.image}
-                      alt={`The cover for ${book.title}`}
-                      variant="top"
-                    />
-                  ) : null}
-                  <Card.Body>
-                    <Card.Title>{book.title}</Card.Title>
-                    <p className="small">Authors: {book.authors}</p>
-                    <Card.Text>{book.description}</Card.Text>
-                    <Button
-                      className="btn-block btn-danger"
-                      onClick={() => handleDeleteBook(book.bookId)}
-                    >
-                      Delete this Book!
-                    </Button>
-                  </Card.Body>
-                </Card>
-              </Col>
-            );
-          })}
-        </Row>
-      </Container>
+      {/* This is needed for the validation functionality above */}
+      <Form noValidate validated={validated} onSubmit={handleFormSubmit}>
+        {/* show alert if server response is bad */}
+        <Alert
+          dismissible
+          onClose={() => setShowAlert(false)}
+          show={showAlert}
+          variant="danger"
+        >
+          Something went wrong with your signup!
+        </Alert>
+
+        <Form.Group className="mb-3">
+          <Form.Label htmlFor="username">Username</Form.Label>
+          <Form.Control
+            type="text"
+            placeholder="Your username"
+            name="username"
+            onChange={handleInputChange}
+            value={userFormData.username}
+            required
+          />
+          <Form.Control.Feedback type="invalid">
+            Username is required!
+          </Form.Control.Feedback>
+        </Form.Group>
+
+        <Form.Group className="mb-3">
+          <Form.Label htmlFor="email">Email</Form.Label>
+          <Form.Control
+            type="email"
+            placeholder="Your email address"
+            name="email"
+            onChange={handleInputChange}
+            value={userFormData.email}
+            required
+          />
+          <Form.Control.Feedback type="invalid">
+            Email is required!
+          </Form.Control.Feedback>
+        </Form.Group>
+
+        <Form.Group className="mb-3">
+          <Form.Label htmlFor="password">Password</Form.Label>
+          <Form.Control
+            type="password"
+            placeholder="Your password"
+            name="password"
+            onChange={handleInputChange}
+            value={userFormData.password}
+            required
+          />
+          <Form.Control.Feedback type="invalid">
+            Password is required!
+          </Form.Control.Feedback>
+        </Form.Group>
+        <Button
+          disabled={
+            !(
+              userFormData.username &&
+              userFormData.email &&
+              userFormData.password
+            )
+          }
+          type="submit"
+          variant="success"
+        >
+          Submit
+        </Button>
+      </Form>
     </>
   );
 };
 
-export default SavedBooks;
+export default SignupForm;

@@ -1,44 +1,22 @@
 // see SignupForm.js for comments
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Form, Button, Alert } from "react-bootstrap";
-
+import Auth from "../utils/auth";
 import { useMutation } from "@apollo/client";
 import { LOGIN_USER } from "../utils/mutations";
-
-import Auth from "../utils/auth";
 
 const LoginForm = () => {
   const [userFormData, setUserFormData] = useState({ email: "", password: "" });
   const [validated] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
+  const [loginUser] = useMutation(LOGIN_USER);
 
-  //Define a mutation hook named 'login' and destructure its 'error' property
-
-  const [login, { error }] = useMutation(LOGIN_USER);
-  // This useEffect hook runs whenever 'error' changes.
-  useEffect(() => {
-    // Check if 'error' exists (i.e., there was an error during the mutation).
-    if (error) {
-      setShowAlert(true);
-    } else {
-      // If there's an error, set 'showAlert' to true to display an alert.
-      setShowAlert(false);
-    }
-  }, [error]);
-  // Log the 'login' object for debugging purposes.
-  console.log("Login", login);
-
-  // Define a function to handle input changes in the form.
   const handleInputChange = (event) => {
-    // Extract the 'name' and 'value' properties from the input element.
     const { name, value } = event.target;
-    // Update the 'userFormData' state by spreading its current values and updating the 'name' property.
     setUserFormData({ ...userFormData, [name]: value });
   };
 
-  // Define a function to handle form submission.
   const handleFormSubmit = async (event) => {
-    // Prevent the default form submission behavior, which would cause a page reload.
     event.preventDefault();
 
     // check if form has everything (as per react-bootstrap docs)
@@ -47,20 +25,20 @@ const LoginForm = () => {
       event.preventDefault();
       event.stopPropagation();
     }
-    // Try to execute the login mutation with the provided user data.
+
     try {
-      // Use the 'login' mutation function, passing in the user form data as variables.
-      const { data } = await login({
-        variables: { ...userFormData },
+      const { email, password } = userFormData;
+
+      const { data } = await loginUser({
+        variables: { email, password },
       });
-
-      console.log(data);
-
-      Auth.login(data.login.token);
-    } catch (e) {
-      console.error(e);
+      const token = data.login.token;
+      Auth.login(token);
+    } catch (err) {
+      console.error(err);
+      setShowAlert(true);
     }
-    // After the login attempt, reset the 'userFormData' state to clear the form input fields.
+
     setUserFormData({
       username: "",
       email: "",

@@ -4,28 +4,24 @@ import { Container, Col, Form, Button, Card, Row } from "react-bootstrap";
 import Auth from "../utils/auth";
 
 import { searchGoogleBooks } from "../utils/API";
+import { useMutation } from "@apollo/client";
 import { SAVE_BOOK } from "../utils/mutations";
 import { saveBookIds, getSavedBookIds } from "../utils/localStorage";
-import { useMutation } from "@apollo/client";
 
 const SearchBooks = () => {
   // create state for holding returned google api data
-
   const [searchedBooks, setSearchedBooks] = useState([]);
   // create state for holding our search field data
-
   const [searchInput, setSearchInput] = useState("");
 
-  // create state to hold saved bookId values
+  // mutation for saving book to user's account
+  const [saveBook, { error }] = useMutation(SAVE_BOOK);
 
+  // create state to hold saved bookId values
   const [savedBookIds, setSavedBookIds] = useState(getSavedBookIds());
 
-  //TODO: Use the Apollo useMutation() Hook to execute the SAVE_BOOK mutation in the handleSaveBook() function instead of the saveBook() function imported from the API file.
-
-  const [saveBook, { Error }] = useMutation(SAVE_BOOK);
-
   // set up useEffect hook to save `savedBookIds` list to localStorage on component unmount
-
+  // learn more here: https://reactjs.org/docs/hooks-effect.html#effects-with-cleanup
   useEffect(() => {
     return () => saveBookIds(savedBookIds);
   });
@@ -39,10 +35,7 @@ const SearchBooks = () => {
     }
 
     try {
-      //const response = await searchGoogleBooks(searchInput);---------------------
-      const response = await fetch(
-        `https://www.googleapis.com/books/v1/volumes?q=${searchInput}`
-      );
+      const response = await searchGoogleBooks(searchInput);
 
       if (!response.ok) {
         throw new Error("something went wrong!");
@@ -81,7 +74,6 @@ const SearchBooks = () => {
       const { data } = await saveBook({
         variables: { bookData: { ...bookToSave } },
       });
-      console.log(savedBookIds);
 
       // if book successfully saves to user's account, save book id to state
       setSavedBookIds([...savedBookIds, bookToSave.bookId]);
@@ -92,7 +84,7 @@ const SearchBooks = () => {
 
   return (
     <>
-      <div className="text-light bg-dark pt-5">
+      <div className="text-light bg-dark p-5">
         <Container>
           <h1>Search for Books!</h1>
           <Form onSubmit={handleFormSubmit}>
@@ -142,7 +134,7 @@ const SearchBooks = () => {
                     {Auth.loggedIn() && (
                       <Button
                         disabled={savedBookIds?.some(
-                          (savedId) => savedId === book.bookId
+                          (savedBookId) => savedBookId === book.bookId
                         )}
                         className="btn-block btn-info"
                         onClick={() => handleSaveBook(book.bookId)}
